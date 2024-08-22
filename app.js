@@ -8,6 +8,7 @@ import modelRoute from './routes/ModelRoute.js'
 import categoryRoute from './routes/CategoryRoute.js'
 import optionsRouter from './routes/options.js';
 import authRouter from './routes/AuthRoutes.js';
+import profileRouter from './routes/profileRoute.js'
 import session from 'express-session';
 import passport from './config/passport.js'; // Adjust path as needed
 
@@ -53,6 +54,7 @@ app.use('/', modelRoute);
 app.use('/', categoryRoute);
 app.use('/', optionsRouter);
 app.use('/', authRouter);
+app.use('/', profileRouter)
 
 // Basic Route
 app.get('/', (req, res) => {
