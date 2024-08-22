@@ -1,31 +1,37 @@
+// app.js
 import express from 'express';
+import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import SessionConfig from './config/Sessions.js'
 import advertRoutes from './routes/AdvertRoutes.js';
-import pageRoutes from './routes/pages.js'
-
-
-const app = express();
+import pageRoutes from './routes/pages.js';
 
 dotenv.config();
 
-// Apply other middlewares
+const app = express();
 
+// Database connection
+const dbPassword = process.env.DB_PASSWORD;
+const uri = `mongodb+srv://broadwaymarketingconsults:${dbPassword}@carmartuk.0chjo.mongodb.net/carmart?retryWrites=true&w=majority&appName=CarmartUK`;
+
+mongoose.connect(uri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log('Successfully connected to MongoDB'))
+.catch((error) => console.error('Error connecting to MongoDB:', error));
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(SessionConfig);
 
-
+// Routes
 app.use('/', advertRoutes);
 app.use('/', pageRoutes);
 
-// Basic Route // Define your routes
+// Basic Route
 app.get('/', (req, res) => {
   res.send('Hello, world!');
 });
-
 
 // Start the server
 const PORT = process.env.PORT || 3000;
@@ -33,10 +39,4 @@ app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 
-
-
-
-
-
-
-
+export default app;
