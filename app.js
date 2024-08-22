@@ -7,6 +7,7 @@ import pageRoutes from './routes/pages.js';
 import modelRoute from './routes/ModelRoute.js'
 import categoryRoute from './routes/CategoryRoute.js'
 import optionsRouter from './routes/options.js';
+import authRouter from './routes/AuthRoutes.js';
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.use('/', pageRoutes);
 app.use('/', modelRoute);
 app.use('/', categoryRoute);
 app.use('/', optionsRouter);
+app.use('/', authRouter);
 
 // Basic Route
 app.get('/', (req, res) => {
