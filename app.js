@@ -8,6 +8,10 @@ import modelRoute from './routes/ModelRoute.js'
 import categoryRoute from './routes/CategoryRoute.js'
 import optionsRouter from './routes/options.js';
 import authRouter from './routes/AuthRoutes.js';
+import session from 'express-session';
+import passport from './config/passport.js'; // Adjust path as needed
+
+
 
 dotenv.config();
 
@@ -25,6 +29,22 @@ mongoose.connect(uri, {
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Session middleware configuration
+app.use(session({
+  secret: process.env.MY_APP_COOKIE_SECRET, // Use the secret from environment variables
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: true, // Ensure cookies are only sent over HTTPS
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Initialize Passport and restore authentication state from the session
+app.use(passport.initialize());
+app.use(passport.session());
+
 
 // Routes
 app.use('/', advertRoutes);
