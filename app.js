@@ -4,6 +4,8 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import advertRoutes from './routes/AdvertRoutes.js';
 import pageRoutes from './routes/pages.js';
+import modelRoute from './routes/ModelRoute.js'
+import categoryRoute from './routes/CategoryRoute.js'
 
 dotenv.config();
 
@@ -14,8 +16,6 @@ const dbPassword = process.env.DB_PASSWORD;
 const uri = `mongodb+srv://broadwaymarketingconsults:${dbPassword}@carmartuk.0chjo.mongodb.net/carmart?retryWrites=true&w=majority&appName=CarmartUK`;
 
 mongoose.connect(uri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
 })
 .then(() => console.log('Successfully connected to MongoDB'))
 .catch((error) => console.error('Error connecting to MongoDB:', error));
@@ -27,6 +27,8 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/', advertRoutes);
 app.use('/', pageRoutes);
+app.use('/', modelRoute);
+app.use('/', categoryRoute);
 
 // Basic Route
 app.get('/', (req, res) => {

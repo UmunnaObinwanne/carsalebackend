@@ -23,7 +23,7 @@ const userSchema = new Schema({
   NumberOfAdsPosted: { type: Number, default: 0 },
   NumberOfMessages: { type: Number, default: 0 },
   Favorites: { type: [String] }, // Define Favorites as an array of strings
-messages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chat' }],
+//messages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chat' }],
     isAdmin: { type: Boolean, default: false},
 }, { timestamps: true });
 
