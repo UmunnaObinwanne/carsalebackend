@@ -1,6 +1,5 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import cors from 'cors';
 
 import advertRoutes from './routes/AdvertRoutes.js';
 
@@ -10,10 +9,6 @@ const app = express();
 dotenv.config();
 
 // Apply other middlewares
-app.use(cors({
-  origin: process.env.FRONTEND_URL,
-  credentials: true,
-}));
 
 
 // Middleware
