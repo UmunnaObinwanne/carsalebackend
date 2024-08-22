@@ -6,6 +6,7 @@ import advertRoutes from './routes/AdvertRoutes.js';
 import pageRoutes from './routes/pages.js';
 import modelRoute from './routes/ModelRoute.js'
 import categoryRoute from './routes/CategoryRoute.js'
+import optionsRouter from './routes/options.js';
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.use('/', advertRoutes);
 app.use('/', pageRoutes);
 app.use('/', modelRoute);
 app.use('/', categoryRoute);
+app.use('/', optionsRouter);
 
 // Basic Route
 app.get('/', (req, res) => {
