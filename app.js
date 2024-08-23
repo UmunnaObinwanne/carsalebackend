@@ -36,10 +36,11 @@ app.use(session({
   secret: process.env.MY_APP_COOKIE_SECRET, // Use the secret from environment variables
   resave: false,
   saveUninitialized: false,
- cookie: { 
-    secure: process.env.NODE_ENV === 'production',  // Secure cookies in production
-    httpOnly: true,  // Helps prevent XSS attacks
-    maxAge: 24 * 60 * 60 * 1000  // Cookie expiry time (24 hours)
+cookie: {
+    secure: process.env.NODE_ENV === 'production',  // Ensures cookies are only sent over HTTPS
+    httpOnly: true,  // Prevents JavaScript from accessing the cookies
+    maxAge: 24 * 60 * 60 * 1000,  // Cookie expiry (24 hours)
+    sameSite: 'none'  // Required for cross-origin requests with credentials
   }
 }));
 
