@@ -11,6 +11,7 @@ import authRouter from './routes/AuthRoutes.js';
 import profileRouter from './routes/profileRoute.js'
 import session from 'express-session';
 import passport from './config/passport.js'; // Adjust path as needed
+import imageUpload from './routes/imageUpload.js'
 
 
 
@@ -37,10 +38,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
 cookie: {
-    secure: process.env.NODE_ENV === 'production',  // Ensures cookies are only sent over HTTPS
-    httpOnly: true,  // Prevents JavaScript from accessing the cookies
-    maxAge: 24 * 60 * 60 * 1000,  // Cookie expiry (24 hours)
-    sameSite: 'none'  // Required for cross-origin requests with credentials
+secure: true, // Ensure cookies are only sent over HTTPS
+    httpOnly: true, // Helps prevent XSS attacks
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+    sameSite: 'none' // Allows cookies to be sent in cross-site requests
   }
 }));
 
@@ -57,6 +58,7 @@ app.use('/', categoryRoute);
 app.use('/', optionsRouter);
 app.use('/', authRouter);
 app.use('/', profileRouter)
+app.use('/', imageUpload)
 
 // Basic Route
 app.get('/', (req, res) => {
