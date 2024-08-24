@@ -1,4 +1,3 @@
-// app.js
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
@@ -8,54 +7,22 @@ import modelRoute from './routes/ModelRoute.js'
 import categoryRoute from './routes/CategoryRoute.js'
 import optionsRouter from './routes/options.js';
 import authRouter from './routes/AuthRoutes.js';
-import profileRouter from './routes/profileRoute.js'
+import profileRouter from './routes/profileRoute.js';
 import session from 'express-session';
-import passport from './config/passport.js'; // Adjust path as needed
-import imageUpload from './routes/imageUpload.js'
-import chatRoutes from './routes/MessageRoutes.js';  // Import the chat routes
+import passport from './config/passport.js';
+import imageUpload from './routes/imageUpload.js';
+import chatRoutes from './routes/MessageRoutes.js';
 import http from 'http'; // Import http to create a server
 import { Server as SocketIOServer } from 'socket.io'; // Import Socket.io
-
-
 
 dotenv.config();
 
 const app = express();
 
-//creating socket.io server
-const server = http.createServer(app);
-const io = new SocketIOServer(server);
-
-// Database connection
-const dbPassword = process.env.DB_PASSWORD;
-const uri = `mongodb+srv://broadwaymarketingconsults:${dbPassword}@carmartuk.0chjo.mongodb.net/carmart?retryWrites=true&w=majority&appName=CarmartUK`;
-
-mongoose.connect(uri, {
-})
-.then(() => console.log('Successfully connected to MongoDB'))
-.catch((error) => console.error('Error connecting to MongoDB:', error));
-
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Enable trust proxy
+app.set('trust proxy', 1); // Trust the first proxy, typically required when behind a reverse proxy like Vercel
 
 // Session middleware configuration
-/*
-app.use(session({
-  secret: process.env.MY_APP_COOKIE_SECRET, // Use the secret from environment variables
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // Set to false to allow cookies over HTTP on localhost
-    httpOnly: true, // Helps prevent XSS attacks
-    maxAge: 24 * 60 * 60 * 1000, // 1 day
-    sameSite: 'lax' // Adjust for local development; 'strict' or 'lax' works for localhost
-  }
-}));
-
-*/
-//production configuration
-
 app.use(session({
   secret: process.env.MY_APP_COOKIE_SECRET,
   resave: false,
@@ -68,13 +35,25 @@ app.use(session({
   }
 }));
 
-
-
-
 // Initialize Passport and restore authentication state from the session
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Creating socket.io server
+const server = http.createServer(app);
+const io = new SocketIOServer(server);
+
+// Database connection
+const dbPassword = process.env.DB_PASSWORD;
+const uri = `mongodb+srv://broadwaymarketingconsults:${dbPassword}@carmartuk.0chjo.mongodb.net/carmart?retryWrites=true&w=majority&appName=CarmartUK`;
+
+mongoose.connect(uri, {})
+  .then(() => console.log('Successfully connected to MongoDB'))
+  .catch((error) => console.error('Error connecting to MongoDB:', error));
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/', advertRoutes);
@@ -83,15 +62,14 @@ app.use('/', modelRoute);
 app.use('/', categoryRoute);
 app.use('/', optionsRouter);
 app.use('/', authRouter);
-app.use('/', profileRouter)
-app.use('/', imageUpload)
+app.use('/', profileRouter);
+app.use('/', imageUpload);
 app.use('/', chatRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {
   res.send('Hello, world!');
 });
-
 
 // Socket.io connection event
 io.on('connection', (socket) => {
@@ -111,10 +89,9 @@ io.on('connection', (socket) => {
   });
 });
 
-
 // Start the server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 
