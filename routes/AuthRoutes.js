@@ -99,7 +99,10 @@ router.post('/login', async (req, res) => {
             res.json({
                 message: 'User logged in successfully',
                 userId: existingUser._id.toString() // Ensure userId is a string
+                 
+                
             });
+             console.log('User:', req.user);
         });
     } catch (error) {
         console.error(error);
@@ -129,6 +132,7 @@ router.get('/profile', isAuthenticated, (req, res) => {
         return res.status(401).json({ message: 'User not authenticated' });
     }
     res.json({ message: 'User profile', user: req.user });
+     console.log('User:', req.user);
 });
 
 // Reset Password

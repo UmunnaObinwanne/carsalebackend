@@ -12,12 +12,19 @@ import profileRouter from './routes/profileRoute.js'
 import session from 'express-session';
 import passport from './config/passport.js'; // Adjust path as needed
 import imageUpload from './routes/imageUpload.js'
+import chatRoutes from './routes/MessageRoutes.js';  // Import the chat routes
+import http from 'http'; // Import http to create a server
+import { Server as SocketIOServer } from 'socket.io'; // Import Socket.io
 
 
 
 dotenv.config();
 
 const app = express();
+
+//creating socket.io server
+const server = http.createServer(app);
+const io = new SocketIOServer(server);
 
 // Database connection
 const dbPassword = process.env.DB_PASSWORD;
@@ -33,17 +40,36 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Session middleware configuration
+/*
 app.use(session({
   secret: process.env.MY_APP_COOKIE_SECRET, // Use the secret from environment variables
   resave: false,
   saveUninitialized: false,
-cookie: {
-secure: true, // Ensure cookies are only sent over HTTPS
+  cookie: {
+    secure: false, // Set to false to allow cookies over HTTP on localhost
     httpOnly: true, // Helps prevent XSS attacks
     maxAge: 24 * 60 * 60 * 1000, // 1 day
-    sameSite: 'none' // Allows cookies to be sent in cross-site requests
+    sameSite: 'lax' // Adjust for local development; 'strict' or 'lax' works for localhost
   }
 }));
+
+*/
+//production configuration
+
+app.use(session({
+  secret: process.env.MY_APP_COOKIE_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: true, // Ensures the cookie is sent only over HTTPS
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+    sameSite: 'none' // Allows cross-site requests; necessary for some use cases
+  }
+}));
+
+
+
 
 // Initialize Passport and restore authentication state from the session
 app.use(passport.initialize());
@@ -59,11 +85,32 @@ app.use('/', optionsRouter);
 app.use('/', authRouter);
 app.use('/', profileRouter)
 app.use('/', imageUpload)
+app.use('/', chatRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {
   res.send('Hello, world!');
 });
+
+
+// Socket.io connection event
+io.on('connection', (socket) => {
+  console.log('A user connected', socket.id);
+
+  socket.on('joinRoom', ({ chatId }) => {
+    socket.join(chatId);
+    console.log(`User ${socket.id} joined room ${chatId}`);
+  });
+
+  socket.on('sendMessage', ({ chatId, message }) => {
+    io.to(chatId).emit('receiveMessage', message);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('A user disconnected', socket.id);
+  });
+});
+
 
 // Start the server
 const PORT = process.env.PORT || 3000;
