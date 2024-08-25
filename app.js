@@ -2,7 +2,6 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import advertRoutes from './routes/AdvertRoutes.js';
-import pageRoutes from './routes/pages.js';
 import modelRoute from './routes/ModelRoute.js'
 import categoryRoute from './routes/CategoryRoute.js'
 import optionsRouter from './routes/options.js';
@@ -14,6 +13,7 @@ import imageUpload from './routes/imageUpload.js';
 import chatRoutes from './routes/MessageRoutes.js';
 import http from 'http'; // Import http to create a server
 import { Server as SocketIOServer } from 'socket.io'; // Import Socket.io
+import cors from 'cors'
 
 dotenv.config();
 
@@ -21,6 +21,9 @@ const app = express();
 
 // Enable trust proxy
 app.set('trust proxy', 1); // Trust the first proxy, typically required when behind a reverse proxy like Vercel
+
+app.use(cors());
+
 
 // Session middleware configuration
 app.use(session({
@@ -57,7 +60,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/', advertRoutes);
-app.use('/', pageRoutes);
 app.use('/', modelRoute);
 app.use('/', categoryRoute);
 app.use('/', optionsRouter);
@@ -96,3 +98,4 @@ server.listen(PORT, () => {
 });
 
 export default app;
+
