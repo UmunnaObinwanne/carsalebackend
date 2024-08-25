@@ -14,6 +14,7 @@ import chatRoutes from './routes/MessageRoutes.js';
 import http from 'http'; // Import http to create a server
 import { Server as SocketIOServer } from 'socket.io'; // Import Socket.io
 import cors from 'cors'
+import authCheck from './routes/authChecker.js'
 
 dotenv.config();
 
@@ -74,6 +75,7 @@ app.use('/', authRouter);
 app.use('/', profileRouter);
 app.use('/', imageUpload);
 app.use('/', chatRoutes);
+app.use('/', authCheck)
 
 // Basic Route
 app.get('/', (req, res) => {
