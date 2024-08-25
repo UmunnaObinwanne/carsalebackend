@@ -32,7 +32,6 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-
 // Session middleware configuration
 app.use(session({
   secret: process.env.MY_APP_COOKIE_SECRET,
@@ -107,4 +106,3 @@ server.listen(PORT, () => {
 });
 
 export default app;
-
