@@ -22,7 +22,14 @@ const app = express();
 // Enable trust proxy
 app.set('trust proxy', 1); // Trust the first proxy, typically required when behind a reverse proxy like Vercel
 
-app.use(cors());
+const corsOptions = {
+  origin: 'http://localhost:5173/', // Replace with your frontend origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true // This allows cookies and other credentials
+};
+
+app.use(cors(corsOptions));
 
 
 // Session middleware configuration
