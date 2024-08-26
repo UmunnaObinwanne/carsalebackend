@@ -318,26 +318,21 @@ router.post('/reset-password/:token', async (req, res) => {
     }
 });
 
+// Google OAuth Routes
+router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
+router.get('https://carmart.netlify.app/used-cars', passport.authenticate('google', { session: false }), (req, res) => {
+  if (req.user) {
+    // Generate JWT Token
+    const token = jwt.sign({ id: req.user._id, username: req.user.username }, JWT_SECRET, { expiresIn: '1d' });
 
-const auth = admin.auth();
-router.post('/auth/google', async (req, res) => {
-  const { idToken } = req.body;
-
-  try {
-    // Verify the ID token
-    const decodedToken = await auth.verifyIdToken(idToken);
-    const uid = decodedToken.uid;
-
-    // Create a session or JWT for the user
-    req.session.user = { uid, email: decodedToken.email };
-
-    res.status(200).json({ message: 'User authenticated', user: { uid, email: decodedToken.email } });
-  } catch (error) {
-    console.error('Error verifying ID token:', error);
-    res.status(401).json({ message: 'Unauthorized' });
+    // Redirect to frontend with token
+    res.redirect(`https://carmart.netlify.app/used-cars?token=${token}`);
+  } else {
+    res.redirect('https://carmart.netlify.app/used-cars?error=auth_failed');
   }
 });
+
 
 
 
