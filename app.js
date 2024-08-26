@@ -17,31 +17,28 @@ import cors from 'cors';
 import authCheck from './routes/authChecker.js';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser'; // Import cookie-parser
+import MongoStore from 'connect-mongo';
 
+const app = express();
 
 dotenv.config();
 
+const dbPassword = process.env.DB_PASSWORD;
+const uri = `mongodb+srv://broadwaymarketingconsults:${dbPassword}@carmartuk.0chjo.mongodb.net/carmart?retryWrites=true&w=majority&appName=CarmartUK`;
 
-const app = express();
+
+    const corsOptions = {   origin: process.env.FRONTEND_URL,   methods:
+    "GET,HEAD,PUT,PATCH,POST,DELETE",   allowedHeaders:
+        "Access-Control-Allow-Headers,Access-Control-Allow-Origin,Access-Control-Request-Method,Access-Control-Request-Headers,Origin,Cache-Control,Content-Type,X-Token,X-Refresh-Token",   credentials: true,   preflightContinue: false,  
+    optionsSuccessStatus: 204 };
+
+    app.use(cors(corsOptions));
+
 
 // Use cookie-parser middleware
 app.use(cookieParser());
 
-// CORS configuration
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (process.env.ALLOWED_ORIGINS.split(',').indexOf(origin) !== -1 || !origin) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true, // Allows cookies and other credentials
-};
 
-app.use(cors(corsOptions));
-
-app.options('*', cors(corsOptions)); // Enable pre-flight for all routes
 
 
 
@@ -55,11 +52,15 @@ app.use(session({
   secret: process.env.MY_APP_COOKIE_SECRET,
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: uri, // Use the environment variable for your MongoDB connection string
+    ttl: 24 * 60 * 60, // 1 day in seconds
+  }),
   cookie: {
-    secure: true, // Use secure cookies in production
+    secure: process.env.NODE_ENV === 'production', // Secure cookies in production
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 1 day
-    sameSite: 'none',
+    maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
+    sameSite: 'none', // 'none' for cross-site cookies in production
   },
 }));
 
@@ -76,16 +77,11 @@ app.use((err, req, res, next) => {
   }
 });
 
-
-
 // Create Socket.io server
 const server = http.createServer(app);
 const io = new SocketIOServer(server);
 
 // Database connection
-const dbPassword = process.env.DB_PASSWORD;
-const uri = `mongodb+srv://broadwaymarketingconsults:${dbPassword}@carmartuk.0chjo.mongodb.net/carmart?retryWrites=true&w=majority&appName=CarmartUK`;
-
 mongoose.connect(uri, {})
   .then(() => console.log('Successfully connected to MongoDB'))
   .catch((error) => console.error('Error connecting to MongoDB:', error));
