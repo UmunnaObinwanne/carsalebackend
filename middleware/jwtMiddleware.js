@@ -1,20 +1,28 @@
-// middleware/jwtMiddleware.js
 import jwt from 'jsonwebtoken';
-import { JWT_SECRET } from '../config/jwtConfig.js';
+import { JWT_SECRET } from '../config/jwtConfig.js'; // Adjust as needed
 
 const authenticateJWT = (req, res, next) => {
-  const token = req.header('Authorization')?.split(' ')[1]; // Get token from Authorization header
+  // Ensure token is correctly retrieved from cookies
+  const token = req.cookies.token;
+  
+  // Log the token for debugging
+  console.log('Token:', token);
 
   if (!token) {
-    return res.status(401).json({ message: 'Access token is missing' });
+    // Move to the next middleware with the "authenticated" status set to false
+    req.authenticated = false;
+    return next();
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      return res.status(403).json({ message: 'Invalid or expired token' });
+      // Move to the next middleware with the "authenticated" status set to false
+      req.authenticated = false;
+      return next();
     }
 
-    req.user = user;
+    req.user = user; // Attach user info to request object
+    req.authenticated = true;
     next();
   });
 };

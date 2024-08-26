@@ -2,8 +2,8 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import advertRoutes from './routes/AdvertRoutes.js';
-import modelRoute from './routes/ModelRoute.js'
-import categoryRoute from './routes/CategoryRoute.js'
+import modelRoute from './routes/ModelRoute.js';
+import categoryRoute from './routes/CategoryRoute.js';
 import optionsRouter from './routes/options.js';
 import authRouter from './routes/AuthRoutes.js';
 import profileRouter from './routes/profileRoute.js';
@@ -13,47 +13,36 @@ import imageUpload from './routes/imageUpload.js';
 import chatRoutes from './routes/MessageRoutes.js';
 import http from 'http'; // Import http to create a server
 import { Server as SocketIOServer } from 'socket.io'; // Import Socket.io
-import cors from 'cors'
-import authCheck from './routes/authChecker.js'
+import cors from 'cors';
+import authCheck from './routes/authChecker.js';
 import bodyParser from 'body-parser';
-//import csurf from 'csurf';
-//import cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser'; // Import cookie-parser
+
 
 dotenv.config();
 
+
 const app = express();
 
+// Use cookie-parser middleware
+app.use(cookieParser());
+
+// CORS configuration
 const corsOptions = {
-  origin: 'https://carmart.netlify.app', // Replace with your frontend origin
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true // This allows cookies and other credentials
+  origin: process.env.FRONTEND_URL, // Replace with your frontend origin
+  credentials: true, // Allows cookies and other credentials
 };
 
 app.use(cors(corsOptions));
 
-// Middleware
-app.use(bodyParser.json()); // Ensure bodyParser is used to parse JSON
 
+
+// Middleware
+app.use(bodyParser.json()); // Parses JSON bodies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-/*
-production cors
-const corsOptions = {
-  origin: 'https://carmart.netlify.app', // Replace with your frontend origin
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true // This allows cookies and other credentials
-};
-
-*/
-
-
-
-
-
-//Production cookies
+// Session middleware configuration
 app.use(session({
   secret: process.env.MY_APP_COOKIE_SECRET,
   resave: false,
@@ -62,32 +51,15 @@ app.use(session({
     secure: true, // Use secure cookies in production
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 1 day
-    sameSite: 'none' // Allows cross-site requests; necessary for some use cases
-  }
+    sameSite: 'none',
+  },
 }));
-
-
-/*
-
-//LocalHost 
-app.use(session({
-  secret: process.env.MY_APP_COOKIE_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // Set to false for local development (no HTTPS)
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 1 day
-    sameSite: 'lax' // Allows cross-site requests; necessary for some use cases
-  }
-}));
-*/
 
 // Initialize Passport and restore authentication state from the session
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Error handling middleware for CSRF token errors
+// Error handling middleware for CSRF token errors (if using CSRF protection)
 app.use((err, req, res, next) => {
   if (err.code === 'EBADCSRFTOKEN') {
     res.status(403).json({ name: 'forbidden', message: 'CSRF exception' });
@@ -96,7 +68,9 @@ app.use((err, req, res, next) => {
   }
 });
 
-// Creating socket.io server
+
+
+// Create Socket.io server
 const server = http.createServer(app);
 const io = new SocketIOServer(server);
 
@@ -108,8 +82,6 @@ mongoose.connect(uri, {})
   .then(() => console.log('Successfully connected to MongoDB'))
   .catch((error) => console.error('Error connecting to MongoDB:', error));
 
-
-
 // Routes
 app.use('/', advertRoutes);
 app.use('/', modelRoute);
@@ -119,7 +91,7 @@ app.use('/', authRouter);
 app.use('/', profileRouter);
 app.use('/', imageUpload);
 app.use('/', chatRoutes);
-app.use('/', authCheck)
+app.use('/', authCheck);
 
 // Basic Route
 app.get('/', (req, res) => {
