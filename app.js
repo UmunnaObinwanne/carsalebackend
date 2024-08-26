@@ -54,18 +54,18 @@ const corsOptions = {
 
 
 //Production cookies
-//Session middleware configuration
 app.use(session({
   secret: process.env.MY_APP_COOKIE_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true, // Ensures the cookie is sent only over HTTPS
+    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 1 day
     sameSite: 'none' // Allows cross-site requests; necessary for some use cases
   }
 }));
+
 
 /*
 
