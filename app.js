@@ -27,7 +27,7 @@ const dbPassword = process.env.DB_PASSWORD;
 const uri = `mongodb+srv://broadwaymarketingconsults:${dbPassword}@carmartuk.0chjo.mongodb.net/carmart?retryWrites=true&w=majority&appName=CarmartUK`;
 
 
-    const corsOptions = {   origin: process.env.FRONTEND_URL,   methods:
+    const corsOptions = {   origin: 'https://carmart.netlify.app',   methods:
     "GET,HEAD,PUT,PATCH,POST,DELETE",   allowedHeaders:
         "Access-Control-Allow-Headers,Access-Control-Allow-Origin,Access-Control-Request-Method,Access-Control-Request-Headers,Origin,Cache-Control,Content-Type,X-Token,X-Refresh-Token",   credentials: true,   preflightContinue: false,  
     optionsSuccessStatus: 204 };
