@@ -229,7 +229,7 @@ router.post('/reset-password/:token', async (req, res) => {
 // Google OAuth Routes
 router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-router.get('http://localhost:5173/used-cars', passport.authenticate('google', { session: false }), (req, res) => {
+router.get('https://carmart.netlify.app/used-cars', passport.authenticate('google', { session: false }), (req, res) => {
   if (req.user) {
     // Generate JWT Token
     const token = jwt.sign({ id: req.user._id, username: req.user.username }, JWT_SECRET, { expiresIn: '1d' });
@@ -237,7 +237,7 @@ router.get('http://localhost:5173/used-cars', passport.authenticate('google', { 
     // Redirect to frontend with token
     res.redirect(`http://localhost:5173/used-cars?token=${token}`);
   } else {
-    res.redirect('http://localhost:5173/used-cars?error=auth_failed');
+    res.redirect('https://carmart.netlify.app/used-cars?error=auth_failed');
   }
 });
 
