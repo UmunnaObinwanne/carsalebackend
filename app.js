@@ -43,7 +43,7 @@ const corsOptions = {
 */
 
 const corsOptions = {
-  origin: 'http://localhost:5173', // Replace with your frontend origin
+  origin: 'https://carmart.netlify.app', // Replace with your frontend origin
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true // This allows cookies and other credentials
@@ -52,9 +52,9 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 
-/*
-Production cookies
-Session middleware configuration
+
+//Production cookies
+//Session middleware configuration
 app.use(session({
   secret: process.env.MY_APP_COOKIE_SECRET,
   resave: false,
@@ -63,11 +63,11 @@ app.use(session({
     secure: true, // Ensures the cookie is sent only over HTTPS
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 1 day
-    sameSite: 'lax' // Allows cross-site requests; necessary for some use cases
+    sameSite: 'none' // Allows cross-site requests; necessary for some use cases
   }
 }));
 
-*/
+/*
 
 //LocalHost 
 app.use(session({
@@ -81,6 +81,7 @@ app.use(session({
     sameSite: 'lax' // Allows cross-site requests; necessary for some use cases
   }
 }));
+*/
 
 // Initialize Passport and restore authentication state from the session
 app.use(passport.initialize());
