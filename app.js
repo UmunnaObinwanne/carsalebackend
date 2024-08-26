@@ -23,7 +23,14 @@ dotenv.config();
 
 const app = express();
 
+const corsOptions = {
+  origin: 'https://carmart.netlify.app', // Replace with your frontend origin
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true // This allows cookies and other credentials
+};
 
+app.use(cors(corsOptions));
 
 // Middleware
 app.use(bodyParser.json()); // Ensure bodyParser is used to parse JSON
@@ -42,14 +49,7 @@ const corsOptions = {
 
 */
 
-const corsOptions = {
-  origin: 'https://carmart.netlify.app', // Replace with your frontend origin
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true // This allows cookies and other credentials
-};
 
-app.use(cors(corsOptions));
 
 
 
