@@ -29,11 +29,19 @@ app.use(cookieParser());
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.FRONTEND_URL, // Replace with your frontend origin
+  origin: function (origin, callback) {
+    if (process.env.ALLOWED_ORIGINS.split(',').indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true, // Allows cookies and other credentials
 };
 
 app.use(cors(corsOptions));
+
+app.options('*', cors(corsOptions)); // Enable pre-flight for all routes
 
 
 
