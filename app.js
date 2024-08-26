@@ -15,14 +15,24 @@ import http from 'http'; // Import http to create a server
 import { Server as SocketIOServer } from 'socket.io'; // Import Socket.io
 import cors from 'cors'
 import authCheck from './routes/authChecker.js'
+import bodyParser from 'body-parser';
+//import csurf from 'csurf';
+//import cookieParser from 'cookie-parser';
 
 dotenv.config();
 
 const app = express();
 
-// Enable trust proxy
-app.set('trust proxy', 1); // Trust the first proxy, typically required when behind a reverse proxy like Vercel
 
+
+// Middleware
+app.use(bodyParser.json()); // Ensure bodyParser is used to parse JSON
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+/*
+production cors
 const corsOptions = {
   origin: 'https://carmart.netlify.app', // Replace with your frontend origin
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -30,9 +40,21 @@ const corsOptions = {
   credentials: true // This allows cookies and other credentials
 };
 
+*/
+
+const corsOptions = {
+  origin: 'http://localhost:5173', // Replace with your frontend origin
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true // This allows cookies and other credentials
+};
+
 app.use(cors(corsOptions));
 
-// Session middleware configuration
+
+/*
+Production cookies
+Session middleware configuration
 app.use(session({
   secret: process.env.MY_APP_COOKIE_SECRET,
   resave: false,
@@ -41,13 +63,37 @@ app.use(session({
     secure: true, // Ensures the cookie is sent only over HTTPS
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 1 day
-    sameSite: 'none' // Allows cross-site requests; necessary for some use cases
+    sameSite: 'lax' // Allows cross-site requests; necessary for some use cases
+  }
+}));
+
+*/
+
+//LocalHost 
+app.use(session({
+  secret: process.env.MY_APP_COOKIE_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // Set to false for local development (no HTTPS)
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+    sameSite: 'lax' // Allows cross-site requests; necessary for some use cases
   }
 }));
 
 // Initialize Passport and restore authentication state from the session
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Error handling middleware for CSRF token errors
+app.use((err, req, res, next) => {
+  if (err.code === 'EBADCSRFTOKEN') {
+    res.status(403).json({ name: 'forbidden', message: 'CSRF exception' });
+  } else {
+    next(err);
+  }
+});
 
 // Creating socket.io server
 const server = http.createServer(app);
@@ -61,9 +107,7 @@ mongoose.connect(uri, {})
   .then(() => console.log('Successfully connected to MongoDB'))
   .catch((error) => console.error('Error connecting to MongoDB:', error));
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
 
 // Routes
 app.use('/', advertRoutes);
@@ -100,7 +144,7 @@ io.on('connection', (socket) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

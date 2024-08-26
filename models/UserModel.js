@@ -24,7 +24,8 @@ const userSchema = new Schema({
   NumberOfMessages: { type: Number, default: 0 },
   Favorites: { type: [String] }, // Define Favorites as an array of strings
 //messages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chat' }],
-    isAdmin: { type: Boolean, default: false},
+    isAdmin: { type: Boolean, default: false },
+    googleId: { type: String }, // Add this field for Google OAuth
 }, { timestamps: true });
 
 userSchema.plugin(passportLocalMongoose, { usernameField: "username" });

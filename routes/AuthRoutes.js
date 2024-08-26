@@ -1,13 +1,13 @@
 import express from 'express';
 import User from '../models/UserModel.js';
-import crypto from 'crypto';
 import bcrypt from 'bcrypt';
-import isAuthenticated from '../middleware/IsAuthenticated.js';
-import transporter from '../config/nodemailer.js';
 import { check, validationResult } from 'express-validator';
 import axios from 'axios';
-import passport from 'passport';
+import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import isAuthenticated from '../middleware/IsAuthenticated.js';
+import passport from 'passport';
+import { JWT_SECRET } from '../config/jwtConfig.js';
 
 // Setting up .env
 dotenv.config();
@@ -18,9 +18,9 @@ const router = express.Router();
 // Nodemailer Emailer Origin
 const senderEmail = process.env.email;
 
+
 // Email validation function using Hunter
 async function validateEmailWithHunter(email) {
-    //Initialize the Hunter sdk with your api key:
     const hunterKey = process.env.ZERO_BOUNCE_API_KEY;
     const url = `https://api.hunter.io/v2/email-verifier?email=${email}&api_key=${hunterKey}`;
     
@@ -71,10 +71,13 @@ router.post('/register', [
         const user = new User({ username, email, password: hashedPassword });
         await user.save();
 
-        res.status(201).json({ message: 'User registered successfully' });
+        // Generate JWT token
+        const token = jwt.sign({ id: user._id, username: user.username }, JWT_SECRET, { expiresIn: '1d' });
+
+        res.status(201).json({ message: 'User registered successfully', token });
     } catch (error) {
         console.error(error); // Log the error for debugging
-        res.status(500).json({ message });
+        res.status(500).json({ message: 'Error registering user' });
     }
 });
 
@@ -221,6 +224,21 @@ router.post('/reset-password/:token', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Error resetting password', details: error.message });
     }
+});
+
+// Google OAuth Routes
+router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+router.get('http://localhost:5173/used-cars', passport.authenticate('google', { session: false }), (req, res) => {
+  if (req.user) {
+    // Generate JWT Token
+    const token = jwt.sign({ id: req.user._id, username: req.user.username }, JWT_SECRET, { expiresIn: '1d' });
+
+    // Redirect to frontend with token
+    res.redirect(`http://localhost:5173/used-cars?token=${token}`);
+  } else {
+    res.redirect('http://localhost:5173/used-cars?error=auth_failed');
+  }
 });
 
 
