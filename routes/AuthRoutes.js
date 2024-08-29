@@ -1,18 +1,13 @@
 import express from 'express';
-
-import dotenv from 'dotenv';
-
-// Firebase Admin SDK
-import admin from 'firebase-admin';
-import UserModel from '../models/UserModel.js'; // Adjust the path as needed
+import User from '../models/UserModel.js';
+import crypto from 'crypto';
+import bcrypt from 'bcrypt';
+import isAuthenticated from '../middleware/IsAuthenticated.js';
+import transporter from '../config/nodemailer.js';
 import { check, validationResult } from 'express-validator';
-import axios from 'axios'
-
-//notImportant for now
+import axios from 'axios';
 import passport from 'passport';
-import { JWT_SECRET } from '../config/jwtConfig.js';
-import jwt from 'jsonwebtoken';
-import authenticateJWT from '../middleware/jwtMiddleware.js';
+import dotenv from 'dotenv';
 
 // Setting up .env
 dotenv.config();
@@ -20,28 +15,12 @@ dotenv.config();
 // Initializing express
 const router = express.Router();
 
-// Initialize Firebase Admin
-admin.initializeApp({
-  credential: admin.credential.cert({
-    type: process.env.FIREBASE_TYPE,
-    project_id: process.env.FIREBASE_PROJECT_ID,
-    private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
-    private_key: process.env.FIREBASE_PRIVATE_KEY, // Handle newlines in the private key
-    client_email: process.env.FIREBASE_CLIENT_EMAIL,
-    client_id: process.env.FIREBASE_CLIENT_ID,
-    auth_uri: process.env.FIREBASE_AUTH_URI,
-    token_uri: process.env.FIREBASE_TOKEN_URI,
-    auth_provider_x509_cert_url: process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
-    client_x509_cert_url: process.env.FIREBASE_CLIENT_X509_CERT_URL,
-    universe_domain: process.env.FIREBASE_UNIVERSE_DOMAIN
-  }),
-});
-
-// Firebase Authentication Routes
-
+// Nodemailer Emailer Origin
+const senderEmail = process.env.email;
 
 // Email validation function using Hunter
 async function validateEmailWithHunter(email) {
+    //Initialize the Hunter sdk with your api key:
     const hunterKey = process.env.ZERO_BOUNCE_API_KEY;
     const url = `https://api.hunter.io/v2/email-verifier?email=${email}&api_key=${hunterKey}`;
     
@@ -49,7 +28,7 @@ async function validateEmailWithHunter(email) {
         const response = await axios.get(url);
         return response.data;
     } catch (error) {
-        console.error('Error validating email with Hunter:', error);
+        console.error(error);
         return null;
     }
 }
@@ -62,173 +41,99 @@ router.post('/register', [
         .matches(/[a-z]/).withMessage('Password must contain at least one lowercase letter')
         .matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter')
         .matches(/[0-9]/).withMessage('Password must contain at least one number')
-        .matches(/[\W]/).withMessage('Password must contain at least one symbol'),
-    check('email').isEmail().withMessage('Email is not valid')
+        .matches(/[\W]/).withMessage('Password must contain at least one symbol')
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const { username, email, password, firstName, lastName } = req.body;
+    const { username, email, password } = req.body;
 
     // Validate email with Hunter
     const response = await validateEmailWithHunter(email);
-    if (!response || response.data.status !== 'valid') {
+    if (response.data.status !== 'valid') {
         return res.status(400).json({ message: 'Invalid email address' });
     }
 
     try {
-        // Log the incoming request data
-        console.log('Received request data:', { email, password, username, firstName, lastName });
+        // Check if username or email already exists
+        const existingUser = await User.findOne({ $or: [{ username }, { email }] });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email or username already exists' });
+        }
 
-        // Create a new user in Firebase Authentication
-        const userRecord = await admin.auth().createUser({
-            email,
-            password,
-            displayName: username, // Set the display name in Firebase
-        });
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+        console.log(`Hashed password during registration: ${hashedPassword}`);
 
-        // Log the userRecord returned by Firebase
-        console.log('Firebase userRecord:', userRecord);
+        // Create a new user
+        const user = new User({ username, email, password: hashedPassword });
+        await user.save();
 
-        // Update the user profile with the username in Firebase
-        const updatedUserRecord = await admin.auth().updateUser(userRecord.uid, {
-            displayName: username,
-        });
+        res.status(201).json({ message: 'User registered successfully' });
+    } catch (error) {
+        console.error(error); // Log the error for debugging
+        res.status(500).json({ message });
+    }
+});
 
-        // Log the updated user record to ensure the displayName was set correctly
-        console.log('Updated Firebase userRecord:', updatedUserRecord);
+// Login User
+router.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    try {
+        const existingUser = await User.findOne({ username });
+        if (!existingUser) {
+            return res.status(401).json({ message: 'User not found, please register' });
+        }
 
-        // Save the user information to MongoDB
-        const newUser = new UserModel({
-            email,
-            username,  // Store the username in MongoDB
-            firebaseUid: userRecord.uid,
-            firstName,
-            lastName,
-        });
+        const isPasswordValid = await existingUser.comparePassword(password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: 'Incorrect password' });
+        }
 
-        // Log the user data before saving to MongoDB
-        console.log('Data to be saved in MongoDB:', newUser);
-
-        await newUser.save();
-
-        res.status(201).send({
-            message: 'User created successfully',
-            userId: newUser._id,
-            firebaseUid: userRecord.uid,
-            username: newUser.username,
-            email: newUser.email,
+        req.login(existingUser, (err) => {
+            if (err) {
+                return res.status(500).json({ message: 'Error logging in user' });
+            }
+            res.json({
+                message: 'User logged in successfully',
+                userId: existingUser._id.toString() // Ensure userId is a string
+                 
+                
+            });
+             console.log('User:', req.user);
         });
     } catch (error) {
-        console.error('Error creating user:', error);
-        res.status(400).send({ message: 'Error creating user', error: error.message });
+        console.error(error);
+        res.status(500).json({ message: 'Unable to login user' });
     }
 });
 
-//Login User Logic
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password are required' });
-  }
-
-  try {
-    // Fetch user from Firebase
-    const userRecord = await admin.auth().getUserByEmail(email);
-
-    // Check if user exists in MongoDB
-    const user = await UserModel.findOne({ firebaseUid: userRecord.uid });
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found in database' });
-    }
-
-    // Create a JWT token
-    const token = jwt.sign(
-      { firebaseUid: userRecord.uid, email: userRecord.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '1d' }
-    );
-
-  // Set the token in an HTTP-only cookie
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: true, // Ensure secure is true in production
-    sameSite: 'none', // Lax to allow cookies to be sent on same-site requests
-    maxAge: 24 * 60 * 60 * 1000 // 1 day
-  });
-
-      console.log(token)
-      
-    // Send user details in the response
-    res.status(200).json({
-      message: 'User authenticated',
-      user: {
-        firebaseUid: user.firebaseUid,
-        email: user.email,
-        displayName: user.displayName,
-        userId: user._id,
-      }
+// Logout user
+router.post('/logout', async (req, res) => {
+    req.logout((err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Error logging out user' });
+        }
+        req.session.destroy((err) => {
+            if (err) {
+                return res.status(500).json({ message: 'Error destroying session' });
+            }
+            res.clearCookie('connect.sid'); // Clear the session cookie
+            res.json({ message: 'User logged out successfully' });
+        });
     });
-  } catch (error) {
-    console.error('Error logging in user:', error);
-
-    if (error.code === 'auth/user-not-found') {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    if (error.code === 'auth/invalid-password') {
-      return res.status(401).json({ message: 'Invalid password' });
-    }
-
-    res.status(500).json({ message: 'Error logging in' });
-  }
 });
-
-//handle log out
-// Logout Route
-router.post('/logout', (req, res) => {
-  try {
-    // Clear the token cookie
-    res.clearCookie('token', {
-      httpOnly: true,
-      secure: false, // Set to true in production
-      sameSite: 'lax', // Lax to allow cookies to be sent on same-site requests
-    });
-
-    res.status(200).send({ message: 'Successfully logged out' });
-  } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).send({ message: 'Error during logout' });
-  }
-});
-
 
 // Get user profile
-router.get('/profile', authenticateJWT, async (req, res) => {
-  try {
-    // Extract Firebase UID from the JWT
-    const userId = req.user.user_id;
-
-    // Fetch user details from MongoDB
-    const user = await UserModel.findOne({ userId });
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found in database' });
+router.get('/profile', isAuthenticated, (req, res) => {
+    if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: 'User not authenticated' });
     }
-
-    // Send the user details as the response
-    res.json({user
-    });
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
+    res.json({ message: 'User profile', user: req.user });
+     console.log('User:', req.user);
 });
-
 
 // Reset Password
 // Route to generate reset token
@@ -317,23 +222,6 @@ router.post('/reset-password/:token', async (req, res) => {
         res.status(500).json({ error: 'Error resetting password', details: error.message });
     }
 });
-
-// Google OAuth Routes
-router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-
-router.get('https://carmart.netlify.app/used-cars', passport.authenticate('google', { session: false }), (req, res) => {
-  if (req.user) {
-    // Generate JWT Token
-    const token = jwt.sign({ id: req.user._id, username: req.user.username }, JWT_SECRET, { expiresIn: '1d' });
-
-    // Redirect to frontend with token
-    res.redirect(`https://carmart.netlify.app/used-cars?token=${token}`);
-  } else {
-    res.redirect('https://carmart.netlify.app/used-cars?error=auth_failed');
-  }
-});
-
-
 
 
 export default router;
