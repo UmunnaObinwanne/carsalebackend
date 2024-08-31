@@ -1,109 +1,80 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import session from 'express-session';
+import MongoStore from 'connect-mongo';
+import passport from './config/passport.js';
 import advertRoutes from './routes/AdvertRoutes.js';
 import modelRoute from './routes/ModelRoute.js';
 import categoryRoute from './routes/CategoryRoute.js';
 import optionsRouter from './routes/options.js';
 import authRouter from './routes/AuthRoutes.js';
 import profileRouter from './routes/profileRoute.js';
-import session from 'express-session';
-import passport from './config/passport.js';
 import imageUpload from './routes/imageUpload.js';
 import chatRoutes from './routes/MessageRoutes.js';
-import http from 'http'; // Import http to create a server
-import { Server as SocketIOServer } from 'socket.io'; // Import Socket.io
-import cors from 'cors';
 import authCheck from './routes/authChecker.js';
-import bodyParser from 'body-parser';
-import cookieParser from 'cookie-parser'; // Import cookie-parser
-import MongoStore from 'connect-mongo';
-import messageRoute from './routes/MessageRoutes.js'
-
-const app = express();
+import messageRoute from './routes/MessageRoutes.js';
+import { Server as SocketIOServer } from 'socket.io';
+import http from 'http';
 
 dotenv.config();
 
+const app = express();
+const server = http.createServer(app);
+
+// Database connection
 const dbPassword = process.env.DB_PASSWORD;
 const uri = `mongodb+srv://broadwaymarketingconsults:${dbPassword}@carmartuk.0chjo.mongodb.net/carmart?retryWrites=true&w=majority&appName=CarmartUK`;
 
+mongoose.connect(uri, {})
+  .then(() => console.log('Successfully connected to MongoDB'))
+  .catch((error) => console.error('Error connecting to MongoDB:', error));
 
-    const corsOptions = {
-  origin: 'http://localhost:5173',
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+// CORS configuration
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL 
+    : 'http://localhost:5173',
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-  preflightContinue: false,
-  optionsSuccessStatus: 204,
 };
 
 app.use(cors(corsOptions));
 
-
-// Use cookie-parser middleware
-app.use(cookieParser());
-
-
-
-
-
 // Middleware
-app.use(bodyParser.json()); // Parses JSON bodies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-// Session middleware configuration
+// Session configuration
 app.use(session({
   secret: process.env.MY_APP_COOKIE_SECRET,
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: uri, // Use the environment variable for your MongoDB connection string
-    ttl: 24 * 60 * 60, // 1 day in seconds
+    mongoUrl: uri,
+    ttl: 24 * 60 * 60,
   }),
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Secure cookies in production
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
-    sameSite: 'none', // 'none' for cross-site cookies in production
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'none',
   },
 }));
 
-// Initialize Passport and restore authentication state from the session
+// Passport initialization
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Error handling middleware for CSRF token errors (if using CSRF protection)
-app.use((err, req, res, next) => {
-  if (err.code === 'EBADCSRFTOKEN') {
-    res.status(403).json({ name: 'forbidden', message: 'CSRF exception' });
-  } else {
-    next(err);
-  }
-});
-
-// Create Socket.io server
-const server = http.createServer(app);
+// Socket.io setup
 const io = new SocketIOServer(server, {
-  cors: {
-    origin: "http://localhost:5173", // Your frontend URL
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  },
+  cors: corsOptions,
 });
-// Database connection
-mongoose.connect(uri, {})
-  .then(() => console.log('Successfully connected to MongoDB'))
-  .catch((error) => console.error('Error connecting to MongoDB:', error));
 
-
-
-// Basic Route
-
-
-
-// Pass io to route handlers
 app.use((req, res, next) => {
   req.io = io;
   next();
@@ -117,13 +88,11 @@ app.use('/', optionsRouter);
 app.use('/', authRouter);
 app.use('/', profileRouter);
 app.use('/', imageUpload);
-app.use('/', messageRoute)
+app.use('/', messageRoute);
 app.use('/', chatRoutes);
 app.use('/', authCheck);
-app.get('/', (req, res) => {
-  res.send('Hello, world!');
-});
 
+// Socket.io event handlers
 io.on('connection', (socket) => {
   console.log('A user connected', socket.id);
 
@@ -141,7 +110,12 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start the server
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
+});
+
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

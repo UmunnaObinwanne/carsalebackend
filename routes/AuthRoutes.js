@@ -75,6 +75,7 @@ router.post('/register', [
 });
 
 //Login user
+
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
@@ -96,17 +97,22 @@ router.post('/login', async (req, res) => {
             { expiresIn: '1h' }
         );
 
-        // Set the token as an HTTP-only cookie
-          res.cookie('token', token, { 
-            httpOnly: true, 
-            secure: false, // False during development
-            sameSite: 'Lax', // 'Lax' is sufficient for development
+        // Determine if we're in production
+        const isProduction = process.env.NODE_ENV === 'production';
+
+        // Set the token as a cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: isProduction, // Use secure cookies in production
+            sameSite: isProduction ? 'None' : 'Lax', // 'None' for cross-site cookies in production
+            domain: isProduction ? process.env.FRONTEND_URL  : 'http://localhost:5173', // Set your domain in production
             maxAge: 3600000 // 1 hour
         });
 
+        // Send the response
         res.json({
             message: 'User logged in successfully',
-          userId: user._id.toString(),
+            userId: user._id.toString(),
             token
         });
     } catch (error) {
