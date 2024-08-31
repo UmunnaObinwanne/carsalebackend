@@ -4,12 +4,11 @@ import authenticateJWT from '../middleware/jwtMiddleware.js'; // Adjust path as 
 const router = express.Router();
 
 router.get('/auth-check', authenticateJWT, (req, res) => {
-  // Check if the request is authenticated based on the middleware
-  if (req.authenticated) {
-    res.status(200).json({ authenticated: true, userId: req.user.userId }); // Adjust according to your token payload
-  } else {
-    res.status(200).json({ authenticated: false });
-  }
+    if (req.authenticated) {
+        res.status(200).json({ authenticated: true, userId: req.user.userId });
+    } else {
+        res.status(401).json({ authenticated: false, message: 'User not authenticated' });
+    }
 });
 
 export default router;

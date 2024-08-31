@@ -1,4 +1,4 @@
-import admin from 'firebase-admin';
+
 
 export default async function isAuthenticated(req, res, next) {
   // Get the token from the authorization header

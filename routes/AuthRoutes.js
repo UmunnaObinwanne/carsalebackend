@@ -8,6 +8,7 @@ import { check, validationResult } from 'express-validator';
 import axios from 'axios';
 import passport from 'passport';
 import dotenv from 'dotenv';
+import jwt from 'jsonwebtoken'; // Import JWT package if using JWT
 
 // Setting up .env
 dotenv.config();
@@ -43,10 +44,6 @@ router.post('/register', [
         .matches(/[0-9]/).withMessage('Password must contain at least one number')
         .matches(/[\W]/).withMessage('Password must contain at least one symbol')
 ], async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
 
     const { username, email, password } = req.body;
 
@@ -65,7 +62,6 @@ router.post('/register', [
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
-        console.log(`Hashed password during registration: ${hashedPassword}`);
 
         // Create a new user
         const user = new User({ username, email, password: hashedPassword });
@@ -74,35 +70,44 @@ router.post('/register', [
         res.status(201).json({ message: 'User registered successfully' });
     } catch (error) {
         console.error(error); // Log the error for debugging
-        res.status(500).json({ message });
+        res.status(500).json({ message: error });
     }
 });
 
-// Login User
+//Login user
 router.post('/login', async (req, res) => {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
+
     try {
-        const existingUser = await User.findOne({ username });
-        if (!existingUser) {
+        const user = await User.findOne({ email });
+        if (!user) {
             return res.status(401).json({ message: 'User not found, please register' });
         }
 
-        const isPasswordValid = await existingUser.comparePassword(password);
+        const isPasswordValid = await user.comparePassword(password);
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Incorrect password' });
         }
 
-        req.login(existingUser, (err) => {
-            if (err) {
-                return res.status(500).json({ message: 'Error logging in user' });
-            }
-            res.json({
-                message: 'User logged in successfully',
-                userId: existingUser._id.toString() // Ensure userId is a string
-                 
-                
-            });
-             console.log('User:', req.user);
+        // Create a JWT token
+        const token = jwt.sign(
+            { userId: user._id.toString(), email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+
+        // Set the token as an HTTP-only cookie
+          res.cookie('token', token, { 
+            httpOnly: true, 
+            secure: false, // False during development
+            sameSite: 'Lax', // 'Lax' is sufficient for development
+            maxAge: 3600000 // 1 hour
+        });
+
+        res.json({
+            message: 'User logged in successfully',
+          userId: user._id.toString(),
+            token
         });
     } catch (error) {
         console.error(error);
@@ -111,19 +116,15 @@ router.post('/login', async (req, res) => {
 });
 
 // Logout user
-router.post('/logout', async (req, res) => {
-    req.logout((err) => {
-        if (err) {
-            return res.status(500).json({ message: 'Error logging out user' });
-        }
-        req.session.destroy((err) => {
-            if (err) {
-                return res.status(500).json({ message: 'Error destroying session' });
-            }
-            res.clearCookie('connect.sid'); // Clear the session cookie
-            res.json({ message: 'User logged out successfully' });
-        });
-    });
+router.post('/logout', (req, res) => {
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    res.clearCookie('token', { 
+        path: '/', 
+        sameSite: 'None',   
+        secure: isProduction // Only set secure flag in production
+    }); 
+    res.status(200).json({ message: 'User logged out successfully' });
 });
 
 // Get user profile

@@ -1,6 +1,7 @@
 import express from 'express';
 import User from '../models/UserModel.js';
-import isAuthenticated from '../middleware/IsAuthenticated.js';
+
+import authenticateJWT from '../middleware/jwtMiddleware.js';
 // Import Advert if it's needed
 // import Advert from '../models/AdvertModel.js'; 
 
@@ -9,10 +10,10 @@ const router = express.Router();
 
 
 // Update user profile
-router.put('/profile', isAuthenticated, async (req, res) => {
+router.put('/profile', authenticateJWT, async (req, res) => {
   const { username, email, profilePicture, Location, City, Area, Street, ZIP, phone, About } = req.body;
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -56,7 +57,7 @@ router.get('/user-adverts/:userId', async (req, res) => {
   }
 });
 
-// Get seller profile by ID
+// Get profile of logged in user
 router.get('/profile/:userId', async (req, res) => {
   try {
     const user = await User.findById(req.params.userId);
@@ -68,5 +69,7 @@ router.get('/profile/:userId', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+
 
 export default router;

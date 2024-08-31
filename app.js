@@ -18,6 +18,7 @@ import authCheck from './routes/authChecker.js';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser'; // Import cookie-parser
 import MongoStore from 'connect-mongo';
+import messageRoute from './routes/MessageRoutes.js'
 
 const app = express();
 
@@ -27,12 +28,16 @@ const dbPassword = process.env.DB_PASSWORD;
 const uri = `mongodb+srv://broadwaymarketingconsults:${dbPassword}@carmartuk.0chjo.mongodb.net/carmart?retryWrites=true&w=majority&appName=CarmartUK`;
 
 
-    const corsOptions = {   origin: 'https://carmart.netlify.app',   methods:
-    "GET,HEAD,PUT,PATCH,POST,DELETE",   allowedHeaders:
-        "Access-Control-Allow-Headers,Access-Control-Allow-Origin,Access-Control-Request-Method,Access-Control-Request-Headers,Origin,Cache-Control,Content-Type,X-Token,X-Refresh-Token",   credentials: true,   preflightContinue: false,  
-    optionsSuccessStatus: 204 };
+    const corsOptions = {
+  origin: 'http://localhost:5173',
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+};
 
-    app.use(cors(corsOptions));
+app.use(cors(corsOptions));
 
 
 // Use cookie-parser middleware
@@ -79,12 +84,30 @@ app.use((err, req, res, next) => {
 
 // Create Socket.io server
 const server = http.createServer(app);
-const io = new SocketIOServer(server);
-
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: "http://localhost:5173", // Your frontend URL
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  },
+});
 // Database connection
 mongoose.connect(uri, {})
   .then(() => console.log('Successfully connected to MongoDB'))
   .catch((error) => console.error('Error connecting to MongoDB:', error));
+
+
+
+// Basic Route
+
+
+
+// Pass io to route handlers
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 
 // Routes
 app.use('/', advertRoutes);
@@ -94,15 +117,13 @@ app.use('/', optionsRouter);
 app.use('/', authRouter);
 app.use('/', profileRouter);
 app.use('/', imageUpload);
+app.use('/', messageRoute)
 app.use('/', chatRoutes);
 app.use('/', authCheck);
-
-// Basic Route
 app.get('/', (req, res) => {
   res.send('Hello, world!');
 });
 
-// Socket.io connection event
 io.on('connection', (socket) => {
   console.log('A user connected', socket.id);
 
