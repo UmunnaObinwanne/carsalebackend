@@ -106,7 +106,9 @@ router.post('/login', async (req, res) => {
         // Optionally, you could send a response with a success message
         res.json({
             message: 'User logged in successfully',
-            userId: user._id.toString()
+            userId: user._id.toString(),
+            token
+
             // You can omit the token here if it's already being sent in a secure cookie
         });
     } catch (error) {
