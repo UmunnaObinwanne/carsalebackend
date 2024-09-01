@@ -24,6 +24,12 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
+
+
+// Serve static files from the 'dist' directory
+app.use(express.static('dist'));
+
+
 // Database connection
 const dbPassword = process.env.DB_PASSWORD;
 const uri = `mongodb+srv://broadwaymarketingconsults:${dbPassword}@carmartuk.0chjo.mongodb.net/carmart?retryWrites=true&w=majority&appName=CarmartUK`;
