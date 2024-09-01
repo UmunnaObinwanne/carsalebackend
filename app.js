@@ -55,7 +55,7 @@ app.use(cookieParser());
 
 // Session configuration
 app.use(session({
-  secret: process.env.MY_APP_COOKIE_SECRET,  // Ensure this is set in your environment variables
+  secret: process.env.MY_APP_COOKIE_SECRET,  // 
   resave: false,  // Avoid resaving session if not modified
   saveUninitialized: false,  // Don't create session until something is stored
   store: MongoStore.create({
