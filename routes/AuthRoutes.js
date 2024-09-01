@@ -100,6 +100,7 @@ router.post('/login', async (req, res) => {
             httpOnly: true,
             secure: true,
             sameSite: 'None',
+              partitioned: true,
             maxAge: 3600000
         });
 
