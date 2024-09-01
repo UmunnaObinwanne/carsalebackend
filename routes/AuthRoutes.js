@@ -101,7 +101,7 @@ router.post('/login', async (req, res) => {
             secure: true,
             sameSite: 'None',
             partitioned: true,
-              domain: 'carmart-server.onrender.com',
+            domain: '.netlify.app',
             maxAge: 3600000
         });
 
