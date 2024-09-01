@@ -90,31 +90,27 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ message: 'Incorrect password' });
         }
 
-        // Create a JWT token
         const token = jwt.sign(
             { userId: user._id.toString(), email: user.email },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
-
-        // Set the token as a cookie
         res.cookie('token', token, {
             httpOnly: true,
-            secure: true, // Use secure cookies in production
-            sameSite: none, // 'None' for cross-site cookies in production
-            domain: 'https://carmart.netlify.app', // Set your domain in production
-            maxAge: 3600000 // 1 hour
+            secure: true,
+            sameSite: 'None',
+            domain: 'carmart.netlify.app',
+            maxAge: 3600000
         });
 
-        // Send the response
         res.json({
             message: 'User logged in successfully',
             userId: user._id.toString(),
             token
         });
     } catch (error) {
-        console.error(error);
+        console.error("Login error:", error.message, error.stack);
         res.status(500).json({ message: 'Unable to login user' });
     }
 });
