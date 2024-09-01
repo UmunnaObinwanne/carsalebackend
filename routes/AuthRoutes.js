@@ -74,7 +74,6 @@ router.post('/register', [
     }
 });
 
-//Login user
 
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
@@ -98,17 +97,17 @@ router.post('/login', async (req, res) => {
 
         // Set a more permissive cookie
         res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // Only use secure in production
-            sameSite: 'None',
-            maxAge: 3600000 // 1 hour
+            httpOnly: true,  // Prevent client-side JavaScript from accessing the cookie
+            secure: process.env.NODE_ENV === 'production', // Only use secure in production (requires HTTPS)
+            sameSite: 'Lax',  // 'Lax' allows cookies to be sent with same-site requests and top-level navigation
+            maxAge: 3600000 // 1 hour in milliseconds
         });
 
-        // Also send the token in the response body
+        // Optionally, you could send a response with a success message
         res.json({
             message: 'User logged in successfully',
-            userId: user._id.toString(),
-            token
+            userId: user._id.toString()
+            // You can omit the token here if it's already being sent in a secure cookie
         });
     } catch (error) {
         console.error("Login error:", error.message, error.stack);
@@ -116,12 +115,13 @@ router.post('/login', async (req, res) => {
     }
 });
 
+
 // Logout user
 router.post('/logout', (req, res) => {
 
     res.clearCookie('token', { 
         path: '/', 
-        sameSite: 'None',   
+        sameSite: 'Lax',   
         partitioned: true,
         secure: true // Only set secure flag in production
     }); 

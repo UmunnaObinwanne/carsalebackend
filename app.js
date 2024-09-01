@@ -38,9 +38,9 @@ mongoose.connect(uri, {})
   .then(() => console.log('Successfully connected to MongoDB'))
   .catch((error) => console.error('Error connecting to MongoDB:', error));
 
-// CORS configuration
+// CORS configuration for production
 const corsOptions = {
-  origin: process.env.FRONTEND_URL, //change this in .env when on localhost
+  origin: true,  // Automatically allows requests from the same origin
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -55,18 +55,18 @@ app.use(cookieParser());
 
 // Session configuration
 app.use(session({
-  secret: process.env.MY_APP_COOKIE_SECRET,
-  resave: false,
-  saveUninitialized: false,
+  secret: process.env.MY_APP_COOKIE_SECRET,  // Ensure this is set in your environment variables
+  resave: false,  // Avoid resaving session if not modified
+  saveUninitialized: false,  // Don't create session until something is stored
   store: MongoStore.create({
-    mongoUrl: uri,
-    ttl: 24 * 60 * 60,
+    mongoUrl: uri,  // Use your environment variable for the MongoDB URI
+    ttl: 24 * 60 * 60,  // Session lifetime in seconds (1 day)
   }),
   cookie: {
-    secure: true, //change this when on localhost
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'None',
+    secure: process.env.NODE_ENV === 'production',  // Secure cookies only in production (requires HTTPS)
+    httpOnly: true,  // Prevent client-side JavaScript from accessing the cookie
+    maxAge: 24 * 60 * 60 * 1000,  // Cookie lifespan (1 day)
+    sameSite: 'Lax',  // 'Lax' is appropriate since you're serving from the same origin
   },
 }));
 
@@ -85,16 +85,16 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use('/', advertRoutes);
-app.use('/', modelRoute);
-app.use('/', categoryRoute);
-app.use('/', optionsRouter);
-app.use('/', authRouter);
-app.use('/', profileRouter);
-app.use('/', imageUpload);
-app.use('/', messageRoute);
-app.use('/', chatRoutes);
-app.use('/', authCheck);
+app.use('/api', advertRoutes);
+app.use('/api', modelRoute);
+app.use('/api', categoryRoute);
+app.use('/api', optionsRouter);
+app.use('/api', authRouter);
+app.use('/api', profileRouter);
+app.use('/api', imageUpload);
+app.use('/api', messageRoute);
+app.use('/api', chatRoutes);
+app.use('/api', authCheck);
 
 // Socket.io event handlers
 io.on('connection', (socket) => {
