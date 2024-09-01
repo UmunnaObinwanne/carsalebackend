@@ -97,15 +97,13 @@ router.post('/login', async (req, res) => {
             { expiresIn: '1h' }
         );
 
-        // Determine if we're in production
-        const isProduction = process.env.NODE_ENV === 'production';
 
         // Set the token as a cookie
         res.cookie('token', token, {
             httpOnly: true,
-            secure: isProduction, // Use secure cookies in production
-            sameSite: isProduction ? 'None' : 'Lax', // 'None' for cross-site cookies in production
-            domain: isProduction ? process.env.FRONTEND_URL  : 'http://localhost:5173', // Set your domain in production
+            secure: true, // Use secure cookies in production
+            sameSite: none, // 'None' for cross-site cookies in production
+            domain: 'https://carmart.netlify.app', // Set your domain in production
             maxAge: 3600000 // 1 hour
         });
 
@@ -123,12 +121,11 @@ router.post('/login', async (req, res) => {
 
 // Logout user
 router.post('/logout', (req, res) => {
-    const isProduction = process.env.NODE_ENV === 'production';
 
     res.clearCookie('token', { 
         path: '/', 
         sameSite: 'None',   
-        secure: isProduction // Only set secure flag in production
+        secure: true // Only set secure flag in production
     }); 
     res.status(200).json({ message: 'User logged out successfully' });
 });
