@@ -96,15 +96,15 @@ router.post('/login', async (req, res) => {
             { expiresIn: '1h' }
         );
 
+        // Set a more permissive cookie
         res.cookie('token', token, {
             httpOnly: true,
-            secure: true,
-            sameSite: 'None',
-            partitioned: true,
-            domain: '.netlify.app',
-            maxAge: 3600000
+            secure: process.env.NODE_ENV === 'production', // Only use secure in production
+            sameSite: 'Lax',
+            maxAge: 3600000 // 1 hour
         });
 
+        // Also send the token in the response body
         res.json({
             message: 'User logged in successfully',
             userId: user._id.toString(),
