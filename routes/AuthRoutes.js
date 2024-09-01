@@ -100,7 +100,6 @@ router.post('/login', async (req, res) => {
             httpOnly: true,
             secure: true,
             sameSite: 'None',
-            domain: 'carmart.netlify.app',
             maxAge: 3600000
         });
 
