@@ -34,9 +34,7 @@ mongoose.connect(uri, {})
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL 
-    : 'http://localhost:5173',
+  origin: process.env.FRONTEND_URL, //change this in .env when on localhost
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -59,7 +57,7 @@ app.use(session({
     ttl: 24 * 60 * 60,
   }),
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: true, //change this when on localhost
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
     sameSite: 'none',
