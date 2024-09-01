@@ -60,7 +60,8 @@ app.use(session({
     secure: true, //change this when on localhost
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'none',
+    sameSite: 'None',
+    domain: 'carmart-server.onrender.com'
   },
 }));
 

@@ -100,7 +100,8 @@ router.post('/login', async (req, res) => {
             httpOnly: true,
             secure: true,
             sameSite: 'None',
-              partitioned: true,
+            partitioned: true,
+              domain: 'carmart-server.onrender.com',
             maxAge: 3600000
         });
 
@@ -121,6 +122,7 @@ router.post('/logout', (req, res) => {
     res.clearCookie('token', { 
         path: '/', 
         sameSite: 'None',   
+        partitioned: true,
         secure: true // Only set secure flag in production
     }); 
     res.status(200).json({ message: 'User logged out successfully' });
