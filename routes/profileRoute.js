@@ -1,6 +1,5 @@
 import express from 'express';
 import User from '../models/UserModel.js';
-
 import authenticateJWT from '../middleware/jwtMiddleware.js';
 // Import Advert if it's needed
 // import Advert from '../models/AdvertModel.js'; 

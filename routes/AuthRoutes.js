@@ -2,7 +2,7 @@ import express from 'express';
 import User from '../models/UserModel.js';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
-import isAuthenticated from '../middleware/IsAuthenticated.js';
+
 import transporter from '../config/nodemailer.js';
 import { check, validationResult } from 'express-validator';
 import axios from 'axios';
@@ -131,7 +131,7 @@ router.post('/logout', (req, res) => {
 });
 
 // Get user profile
-router.get('/profile', isAuthenticated, (req, res) => {
+router.get('/profile',  (req, res) => {
     if (!req.isAuthenticated()) {
         return res.status(401).json({ message: 'User not authenticated' });
     }

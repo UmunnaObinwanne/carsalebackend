@@ -1,7 +1,7 @@
 import express from 'express';
 import Advert from '../models/AdvertModel.js'; // Path to your Advert model
 import UserModel from '../models/UserModel.js'; // Path to your User model
-import isAuthenticated from '../middleware/IsAuthenticated.js';
+import authenticateJWT from '../middleware/jwtMiddleware.js';
 import mongoose from 'mongoose';
 
 const router = express.Router();
@@ -10,7 +10,7 @@ const router = express.Router();
 //Create new advert
 
 // Route to create a new advert
-router.post('/create-advert', isAuthenticated, async (req, res) => {
+router.post('/create-advert', authenticateJWT, async (req, res) => {
   try {
     const {
       title,
@@ -21,7 +21,6 @@ router.post('/create-advert', isAuthenticated, async (req, res) => {
       postalCode,
       country,
       city,
-      address,
       isFeatured,
       imageUrls,
       features,
@@ -35,7 +34,7 @@ router.post('/create-advert', isAuthenticated, async (req, res) => {
       doors,
       enginePower,
       engineSize,
-      brochureEngineSize,
+      carName,
       topSpeed,
       acceleration,
       fuelConsumption,
@@ -44,12 +43,21 @@ router.post('/create-advert', isAuthenticated, async (req, res) => {
       extraUrbanMpg,
       insuranceGroup,
       co2Emissions,
-      euroEmissions
+      euroEmissions,
+      transmission,
+      driveType,
+      fuelType,
+      transaction
     } = req.body;
 
+    console.log(req.body)
+
     // Get user ID from session
-    const userId = req.user._id; // Now this should be defined
+    const userId = req.user.userId; // Now this should be defined
+
     const user = await UserModel.findById(userId);
+
+    console.log('post ad', user)
 
     if (!user) {
       return res.status(403).json({ error: 'User not found' });
@@ -64,7 +72,6 @@ router.post('/create-advert', isAuthenticated, async (req, res) => {
       description,
       country,
       city,
-      address,
       postalCode,
       isFeatured,
       postedBy: user._id, // Store user ID in the `postedBy` field
@@ -80,7 +87,7 @@ router.post('/create-advert', isAuthenticated, async (req, res) => {
       doors,
       enginePower,
       engineSize,
-      brochureEngineSize,
+      carName,
       topSpeed,
       acceleration,
       fuelConsumption,
@@ -89,9 +96,12 @@ router.post('/create-advert', isAuthenticated, async (req, res) => {
       extraUrbanMpg,
       insuranceGroup,
       co2Emissions,
-      euroEmissions
+      euroEmissions,
+         transmission,
+      driveType,
+      fuelType,
+      transaction
     });
-
     // Save the advert to the database
     await newAdvert.save();
 
@@ -240,6 +250,171 @@ router.get('/user-adverts/:userId', async (req, res) => {
   }
 });
 
+
+//post a bid
+router.post('/bids',  authenticateJWT, async (req, res) => {
+  const { advertId, amount } = req.body;
+  const userId = req.user.userId;
+
+  if (!userId) {
+    return res.status(401).json({ message: 'User not authenticated' });
+  }
+  console.log('this is the endpoint for bids', userId)
+
+  try {
+    const advert = await Advert.findById(advertId);
+
+    if (!advert) {
+      return res.status(404).json({ message: 'Advert not found' });
+    }
+
+    // Add the new bid
+    advert.bids.push({ userId, amount });
+    await advert.save();
+
+    res.status(200).json({ message: 'Bid submitted successfully' });
+  } catch (error) {
+    console.error('Error submitting bid:', error);
+    res.status(500).json({ message: 'Failed to submit bid' });
+  }
+});
+
+// Edit advert
+router.put('/edit-advert/:id', authenticateJWT, async (req, res) => {
+  try {
+    const advertId = req.params.id;
+    const userId = req.user.userId;
+    const {
+      title,
+      category,
+      model,
+      price,
+      description,
+      postalCode,
+      country,
+      city,
+      imageUrls,
+      features,
+
+      // New fields
+      year,
+      mileage,
+      bodyType,
+      colour,
+      seats,
+      doors,
+      enginePower,
+      engineSize,
+      topSpeed,
+      acceleration,
+      fuelConsumption,
+      fuelCapacity,
+      urbanMpg,
+      carName,
+      insuranceGroup,
+      co2Emissions,
+      euroEmissions, 
+      transmission,
+      driveType,
+      fuelType,
+      transaction
+    } = req.body;
+
+    // Check if the advert ID is valid
+    if (!mongoose.Types.ObjectId.isValid(advertId)) {
+      return res.status(400).json({ message: 'Invalid Advert ID' });
+    }
+
+    // Find the advert and ensure the user is the one who posted it
+    const advert = await Advert.findById(advertId);
+    if (!advert) {
+      return res.status(404).json({ message: 'Advert not found' });
+    }
+
+    if (advert.postedBy.toString() !== userId) {
+      return res.status(403).json({ message: 'Not authorized to edit this advert' });
+    }
+
+    // Update advert fields
+    advert.title = title || advert.title;
+    advert.category = category || advert.category;
+    advert.model = model || advert.model;
+    advert.price = price || advert.price;
+    advert.description = description || advert.description;
+    advert.postalCode = postalCode || advert.postalCode;
+    advert.country = country || advert.country;
+    advert.city = city || advert.city;
+    advert.imageUrls = imageUrls || advert.imageUrls;
+    advert.features = features || advert.features;
+    advert.year = year || advert.year;
+    advert.mileage = mileage || advert.mileage;
+    advert.bodyType = bodyType || advert.bodyType;
+    advert.colour = colour || advert.colour;
+    advert.seats = seats || advert.seats;
+    advert.doors = doors || advert.doors;
+    advert.enginePower = enginePower || advert.enginePower;
+    advert.engineSize = engineSize || advert.engineSize;
+    advert.carName = carName || advert.carName;
+    advert.topSpeed = topSpeed || advert.topSpeed;
+    advert.acceleration = acceleration || advert.acceleration;
+    advert.fuelConsumption = fuelConsumption || advert.fuelConsumption;
+    advert.fuelCapacity = fuelCapacity || advert.fuelCapacity;
+    advert.urbanMpg = urbanMpg || advert.urbanMpg;
+    advert.insuranceGroup = insuranceGroup || advert.insuranceGroup;
+    advert.co2Emissions = co2Emissions || advert.co2Emissions;
+    advert.euroEmissions = euroEmissions || advert.euroEmissions;
+    advert.transmission = transmission || advert.transmission;
+    advert.driveType = driveType || advert.driveType;
+    advert.fuelType = fuelType || advert.fuelType;
+    advert.transaction = transaction || advert.transaction;
+
+    // Save the updated advert
+    await advert.save();
+
+    res.status(200).json({ message: 'Advert updated successfully', advert });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
+// Delete advert
+router.delete('/delete-advert/:id', authenticateJWT, async (req, res) => {
+  try {
+    const advertId = req.params.id;
+    const userId = req.user.userId;
+
+    // Check if the advert ID is valid
+    if (!mongoose.Types.ObjectId.isValid(advertId)) {
+      return res.status(400).json({ message: 'Invalid Advert ID' });
+    }
+
+    // Find the advert and ensure the user is the one who posted it
+    const advert = await Advert.findById(advertId);
+    if (!advert) {
+      return res.status(404).json({ message: 'Advert not found' });
+    }
+
+    if (advert.postedBy.toString() !== userId) {
+      return res.status(403).json({ message: 'Not authorized to delete this advert' });
+    }
+
+    // Delete the advert
+    await Advert.findByIdAndDelete(advertId);
+
+    // Decrement the number of ads posted by the user
+    const user = await UserModel.findById(userId);
+    if (user) {
+      user.NumberOfAdsPosted -= 1;
+      await user.save();
+    }
+
+    res.status(200).json({ message: 'Advert deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
 
 
 
