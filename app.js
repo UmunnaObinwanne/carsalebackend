@@ -18,12 +18,17 @@ import authCheck from './routes/authChecker.js';
 import messageRoute from './routes/MessageRoutes.js';
 import { Server as SocketIOServer } from 'socket.io';
 import http from 'http';
+import pageRoutes from './routes/pageRoutes.js';
+import { adminJs, adminJsRouter } from './adminSetup.js'; // Import AdminJS setup
 
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 
+
+// Enable trust proxy
+app.set('trust proxy', 1);
 
 
 // Serve static files from the 'dist' directory
@@ -95,6 +100,15 @@ app.use('/api', imageUpload);
 app.use('/api', messageRoute);
 app.use('/api', chatRoutes);
 app.use('/api', authCheck);
+app.use('/api', pageRoutes);
+
+
+const PORT = process.env.PORT || 5000;
+
+
+// Use AdminJS router
+app.use(adminJs.options.rootPath, adminJsRouter);
+console.log(`AdminJS connected successfully at http://localhost:${PORT}${adminJs.options.rootPath}`);
 
 // Socket.io event handlers
 io.on('connection', (socket) => {
@@ -120,7 +134,7 @@ app.use((err, req, res, next) => {
   res.status(500).send('Something broke!');
 });
 
-const PORT = process.env.PORT || 5000;
+
 server.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
