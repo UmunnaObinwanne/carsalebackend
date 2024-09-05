@@ -70,7 +70,7 @@ app.use(session({
   cookie: {
     secure: process.env.NODE_ENV === 'production',  // Secure cookies only in production (requires HTTPS)
     httpOnly: true,  // Prevent client-side JavaScript from accessing the cookie
-    maxAge: 24 * 60 * 60 * 1000,  // Cookie lifespan (1 day)
+    maxAge: 24 * 60 * 60 * 1000,  // Cookie lifespan (1 days)
     sameSite: 'Lax',  // 'Lax' is appropriate since you're serving from the same origin
   },
 }));
